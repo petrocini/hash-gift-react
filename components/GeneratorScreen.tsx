@@ -11,17 +11,23 @@ import {
   RefreshCw,
   UserPlus,
   Settings,
+  Phone,
+  Copy,
+  Check,
 } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { SettingsModal } from "./SettingsModal";
+import { ExportButton } from "./ExportButton";
 
 const DEFAULT_TEMPLATE = `\uD83C\uDF85 Ho Ho Ho! Ol\u00E1 {nome}!\n\nSeu Amigo Secreto j\u00E1 foi sorteado. Clique no link abaixo para descobrir quem voc\u00EA tirou (\u00E9 segredo! \uD83E\uDD2B):\n\n{link}`;
 
 export const GeneratorScreen: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [results, setResults] = useState<EncryptedPair[]>([]);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -30,15 +36,30 @@ export const GeneratorScreen: React.FC = () => {
     DEFAULT_TEMPLATE
   );
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 11) value = value.slice(0, 11);
+
+    value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
+    value = value.replace(/(\d)(\d{4})$/, "$1-$2");
+
+    setPhone(value);
+  };
+
   const addParticipant = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     setParticipants([
       ...participants,
-      { id: crypto.randomUUID(), name: name.trim() },
+      {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+      },
     ]);
     setName("");
+    setPhone("");
   };
 
   const removeParticipant = (id: string) => {
@@ -59,6 +80,7 @@ export const GeneratorScreen: React.FC = () => {
 
       return {
         giverName: giver.name,
+        giverPhone: giver.phone,
         encryptedReceiver: encryptName(receiver.name),
       };
     });
@@ -67,7 +89,7 @@ export const GeneratorScreen: React.FC = () => {
     setIsGenerated(true);
   };
 
-  const getWhatsAppLink = (pair: EncryptedPair) => {
+  const generateMessageText = (pair: EncryptedPair) => {
     const baseUrl = window.location.href.split("?")[0];
     const revealUrl = `${baseUrl}?q=${pair.encryptedReceiver}`;
 
@@ -78,8 +100,34 @@ export const GeneratorScreen: React.FC = () => {
     if (!message.includes(revealUrl)) {
       message += `\n\n${revealUrl}`;
     }
+    return message;
+  };
 
-    return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  const getWhatsAppLink = (pair: EncryptedPair) => {
+    const message = generateMessageText(pair);
+    let url = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+      message
+    )}`;
+
+    if (pair.giverPhone) {
+      const cleanPhone = pair.giverPhone.replace(/\D/g, "");
+      if (cleanPhone.length >= 10) {
+        url += `&phone=55${cleanPhone}`;
+      }
+    }
+
+    return url;
+  };
+
+  const handleCopyMessage = async (pair: EncryptedPair, idx: number) => {
+    const message = generateMessageText(pair);
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedId(idx.toString());
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Falha ao copiar", err);
+    }
   };
 
   const reset = () => {
@@ -103,36 +151,64 @@ export const GeneratorScreen: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="p-4 space-y-3 max-h-[50vh] overflow-y-auto custom-scrollbar">
           {results.map((pair, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors"
+              className="flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold">
                   {pair.giverName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-medium text-slate-200">{pair.giverName}</p>
-                  <p className="text-xs text-slate-500">Clique para enviar</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-slate-200">
+                      {pair.giverName}
+                    </p>
+                    {pair.giverPhone && (
+                      <span className="text-[10px] bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded border border-slate-600">
+                        {pair.giverPhone}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    {pair.giverPhone ? "Envio direto" : "Selecionar contato"}
+                  </p>
                 </div>
               </div>
 
-              <a
-                href={getWhatsAppLink(pair)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-all active:scale-95"
-              >
-                <Share2 className="w-4 h-4" />
-                WhatsApp
-              </a>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleCopyMessage(pair, idx)}
+                  className="p-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors active:scale-95 border border-white/5"
+                  title="Copiar mensagem"
+                >
+                  {copiedId === idx.toString() ? (
+                    <Check className="w-4 h-4 text-emerald-400 animate-in zoom-in" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+                <a
+                  href={getWhatsAppLink(pair)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-900/20"
+                >
+                  <Share2 className="w-4 h-4" />
+                  WhatsApp
+                </a>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="p-4 border-t border-white/5 bg-slate-900/50">
+        <div className="p-4 border-t border-white/5 bg-slate-900/50 flex flex-col gap-3">
+          <ExportButton results={results} />
+
+          <div className="h-px bg-white/5 w-full my-1"></div>
+
           <Button
             onClick={reset}
             variant="secondary"
@@ -170,18 +246,30 @@ export const GeneratorScreen: React.FC = () => {
         </div>
 
         <div className="p-6 space-y-6">
-          <form onSubmit={addParticipant} className="flex gap-2">
-            <Input
-              label="Novo Participante"
-              placeholder="Nome ou Apelido"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
+          <form
+            onSubmit={addParticipant}
+            className="flex flex-col sm:flex-row gap-2 items-end"
+          >
+            <div className="w-full sm:flex-1 space-y-2">
+              <Input
+                label="Nome do Participante"
+                placeholder="Ex: João Silva"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+              />
+              <Input
+                label="WhatsApp (Opcional)"
+                placeholder="(00) 00000-0000"
+                value={phone}
+                onChange={handlePhoneChange}
+                inputMode="numeric"
+              />
+            </div>
             <Button
               type="submit"
               variant="secondary"
-              className="mt-[26px]"
+              className="w-full sm:w-auto h-[42px] mb-[1px]"
               disabled={!name.trim()}
             >
               <UserPlus className="w-5 h-5" />
