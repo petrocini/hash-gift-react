@@ -1,0 +1,5 @@
+{
+  "name": "Secret Santa Manager",
+  "description": "A secure Secret Santa organizer where the host never sees the results. Features automated WhatsApp notification dispatch.",
+  "requestFramePermissions": []
+}
