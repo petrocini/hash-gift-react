@@ -1,48 +1,51 @@
-# 🎁 HashGift - Amigo Secreto Serverless
+# 🎁 HashGift - Amigo Secreto
 
-Aplicação web para realizar sorteios de Amigo Secreto de forma rápida, gratuita e sem necessidade de banco de dados.
+Um app direto ao ponto para realizar sorteios de Amigo Secreto: rápido, sem cadastro e sem banco de dados.
 
-🔗 **Demo:** [Insira sua URL da Vercel aqui]
+🔗 **Acesse aqui:** [https://hash-gift-react-fmys.vercel.app](https://hash-gift-react-fmys.vercel.app)
 
-## 💡 A Ideia (Architecture Decision)
+## 💡 A Ideia (Serverless & Stateless)
 
-O objetivo deste projeto foi criar uma ferramenta que seguisse o princípio **KISS (Keep It Simple, Stupid)** e **Privacy-First**, eliminando custos de infraestrutura e complexidade de backend.
+Criei esse projeto para resolver a burocracia dos apps tradicionais de amigo secreto. Eu queria algo que seguisse o princípio **KISS (Keep It Simple, Stupid)**: sem login, sem e-mail e sem custos de infra.
 
-Diferente de apps tradicionais que salvam quem tirou quem em um banco de dados, o HashGift usa **State in URL**:
+A mágica aqui é que **não existe backend**. Usamos o conceito de "State in URL":
 
-1. O sorteio é realizado localmente no navegador (Circular Shuffle).
-2. O resultado é criptografado (AES) e embutido na URL.
-3. O estado da aplicação "vive" apenas no link compartilhado.
+1. O sorteio roda 100% no seu navegador (Client-Side).
+2. O resultado de cada pessoa é criptografado (AES) e embutido num link único.
+3. O "banco de dados" é o próprio link que você envia no WhatsApp.
 
-## 🛠️ Tech Stack
+## 🛠️ Stack
 
-- **Framework:** [Next.js 14](https://nextjs.org/) (App Router)
-- **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
-- **Criptografia:** [Crypto-JS](https://www.npmjs.com/package/crypto-js)
-- **Deploy:** Vercel (Zero Config)
+- **Core:** [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
+- **Visual:** [Tailwind CSS](https://tailwindcss.com/)
+- **Ícones:** Lucide React
+- **Criptografia:** Crypto-JS
+- **Deploy:** Vercel
 
-## 🚀 Como Funciona
+## 🚀 Como funciona
 
-1. **Cadastro:** O organizador insere os nomes dos participantes.
-2. **Sorteio:** Um algoritmo de lista encadeada circular garante que ninguém tire a si mesmo.
-3. **Distribuição:** A aplicação gera um link único para cada participante (ex: `app.com/revelar?q=HASH_ENCRIPTADO`).
-4. **Revelação:** Ao abrir o link, a aplicação descriptografa o parâmetro da URL e revela o amigo secreto.
+1. **Cadastro:** Você coloca o nome da galera.
+2. **Sorteio:** Um algoritmo garante que ninguém tire a si mesmo (Shuffle Circular).
+3. **Envio:** O app gera um link criptografado pra cada um (ex: `app.com/revelar?q=HASH_MALUCO`).
+4. **Revelação:** A pessoa clica, o app decodifica o hash da URL e mostra o resultado.
 
-## ⚠️ Disclaimer (Uso Pessoal)
+## ⚠️ Sobre a Segurança
 
-Este projeto utiliza criptografia simétrica no **Client-Side** para garantir a experiência do usuário (evitar spoilers visuais na URL).
+Como o foco é privacidade e zero custo, a criptografia acontece no **Client-Side**.
 
-**Não utilize para dados sensíveis.** Como a chave de criptografia reside no bundle do frontend, um usuário com conhecimentos técnicos avançados poderia, em teoria, descriptografar os links de outros participantes. Para o propósito de um jogo entre amigos (evitar ler o nome sem querer), a segurança é suficiente.
+**O que isso significa?** A chave de criptografia está no código do front. Para um amigo secreto entre amigos, é perfeito (evita o spoiler visual de ler o nome na URL). Mas, obviamente, não use essa mesma arquitetura para trafegar senhas ou dados bancários, beleza? 😉
 
-## 📦 Como rodar localmente
+## 📦 Rodando na sua máquina
+
+Se quiser fuçar no código ou rodar local:
 
 ```bash
 # Clone o repositório
-git clone [https://github.com/seu-usuario/hash-gift.git](https://github.com/seu-usuario/hash-gift.git)
+git clone [https://github.com/petrocini/hash-gift-react.git](https://github.com/petrocini/hash-gift-react.git)
 
 # Instale as dependências
 npm install --legacy-peer-deps
 
-# Rode o servidor de desenvolvimento
+# Rode o servidor
 npm run dev
 ```
