@@ -11,13 +11,14 @@ import {
   RefreshCw,
   UserPlus,
   Settings,
-  Phone,
   Copy,
   Check,
+  ClipboardList,
 } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { SettingsModal } from "./SettingsModal";
 import { ExportButton } from "./ExportButton";
+import { PasteModal } from "./PasteModal";
 
 const DEFAULT_TEMPLATE = `\uD83C\uDF85 Ho Ho Ho! Ol\u00E1 {nome}!\n\nSeu Amigo Secreto j\u00E1 foi sorteado. Clique no link abaixo para descobrir quem voc\u00EA tirou (\u00E9 segredo! \uD83E\uDD2B):\n\n{link}`;
 
@@ -30,6 +31,7 @@ export const GeneratorScreen: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
 
   const [messageTemplate, setMessageTemplate] = useLocalStorage<string>(
     "santa_msg_template",
@@ -60,6 +62,15 @@ export const GeneratorScreen: React.FC = () => {
     ]);
     setName("");
     setPhone("");
+  };
+
+  const handleImport = (importedData: { name: string; phone?: string }[]) => {
+    const newParticipants = importedData.map((p) => ({
+      id: crypto.randomUUID(),
+      name: p.name,
+      phone: p.phone || undefined,
+    }));
+    setParticipants((prev) => [...prev, ...newParticipants]);
   };
 
   const removeParticipant = (id: string) => {
@@ -276,6 +287,17 @@ export const GeneratorScreen: React.FC = () => {
             </Button>
           </form>
 
+          <div className="flex justify-end -mt-3">
+            <button
+              type="button"
+              onClick={() => setIsPasteModalOpen(true)}
+              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors py-1 px-1 hover:bg-emerald-500/10 rounded"
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              Colar Lista em Massa
+            </button>
+          </div>
+
           <div className="bg-slate-950/30 rounded-xl border border-white/5 min-h-[200px] max-h-[300px] overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-2">
               <ParticipantList
@@ -307,6 +329,12 @@ export const GeneratorScreen: React.FC = () => {
         currentTemplate={messageTemplate}
         onSave={setMessageTemplate}
         defaultTemplate={DEFAULT_TEMPLATE}
+      />
+
+      <PasteModal
+        isOpen={isPasteModalOpen}
+        onClose={() => setIsPasteModalOpen(false)}
+        onImport={handleImport}
       />
     </>
   );
